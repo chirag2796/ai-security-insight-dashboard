@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, ArrowLeft, Download, ExternalLink, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Shield, ArrowLeft, Download, ExternalLink, AlertTriangle, CheckCircle, Info, ClipboardList, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -10,6 +11,8 @@ import {
 } from "recharts";
 import TrustGauge from "@/components/TrustGauge";
 import { generatePDF } from "@/lib/pdf-export";
+import { useToast } from "@/hooks/use-toast";
+import AppHeader from "@/components/AppHeader";
 
 interface VulnCategory {
   score: number;
@@ -93,6 +96,10 @@ const Report = () => {
   const { id } = useParams<{ id: string }>();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [generatingCompliance, setGeneratingCompliance] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { session } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -154,36 +161,65 @@ const Report = () => {
 
   const scoreColor = analysis.trustScore >= 70 ? "text-green-400" : analysis.trustScore >= 40 ? "text-yellow-400" : "text-red-400";
 
+  const handleStartCompliance = async () => {
+    if (!session || !report) return;
+    setGeneratingCompliance(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-compliance`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            reportId: report.id,
+            serviceName: report.service_name,
+            vulnerabilities: analysis.vulnerabilities,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate plan");
+      toast({ title: "Compliance plan created!", description: "Redirecting..." });
+      navigate(`/compliance/${data.planId}`);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setGeneratingCompliance(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background grid-bg">
-      {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="text-sm">Back</span>
-            </Link>
-            <div className="w-px h-6 bg-border/50" />
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <span className="font-display font-bold text-foreground">AI Security Insight</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground font-mono">
-              {new Date(report.created_at).toLocaleDateString()}
-            </span>
-            <button
-              onClick={() => generatePDF(report)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              Export PDF
-            </button>
-          </div>
+      <AppHeader />
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Search
+        </Link>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground font-mono">
+            {new Date(report.created_at).toLocaleDateString()}
+          </span>
+          <button
+            onClick={handleStartCompliance}
+            disabled={generatingCompliance}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-primary/30 text-primary font-medium text-sm hover:bg-primary/10 transition-colors disabled:opacity-50"
+          >
+            {generatingCompliance ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
+            {generatingCompliance ? "Generating..." : "Start Compliance"}
+          </button>
+          <button
+            onClick={() => generatePDF(report)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Export PDF
+          </button>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 py-8" id="report-content">
         <motion.h1
