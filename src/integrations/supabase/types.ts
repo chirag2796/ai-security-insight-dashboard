@@ -22,6 +22,7 @@ export type Database = {
           search_data: Json | null
           service_name: string
           status: string
+          test_bool: boolean | null
           trust_score: number | null
           updated_at: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           search_data?: Json | null
           service_name: string
           status?: string
+          test_bool?: boolean | null
           trust_score?: number | null
           updated_at?: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           search_data?: Json | null
           service_name?: string
           status?: string
+          test_bool?: boolean | null
           trust_score?: number | null
           updated_at?: string
         }
