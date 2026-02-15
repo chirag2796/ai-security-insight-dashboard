@@ -320,8 +320,8 @@ const Report = () => {
                   <div className="mt-2 space-y-1.5">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Trust Score</span>
-                      <span className={`font-mono ${comp.trustScore >= 70 ? "text-green-400" : comp.trustScore >= 40 ? "text-yellow-400" : "text-red-400"}`}>
-                        {comp.trustScore}/100
+                      <span className={`font-mono ${(comp.trustScore ?? 0) >= 70 ? "text-green-400" : (comp.trustScore ?? 0) >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+                        {comp.trustScore != null ? `${comp.trustScore}/100` : "N/A"}
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
