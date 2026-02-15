@@ -1,17 +1,54 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Search, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import ScanningAnimation from "@/components/ScanningAnimation";
 
 const Index = () => {
   const [query, setQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  const navigate = useNavigate();
 
-  const handleScan = useCallback(() => {
+  const handleScan = useCallback(async () => {
     if (!query.trim()) return;
     setIsScanning(true);
-    // TODO: trigger backend scan, then navigate to report
-  }, [query]);
+
+    try {
+      // Create report record
+      const { data: report, error: insertError } = await supabase
+        .from("reports")
+        .insert({ service_name: query.trim(), status: "pending" })
+        .select()
+        .single();
+
+      if (insertError || !report) throw insertError;
+
+      // Trigger the analysis edge function
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-service`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ serviceName: query.trim(), reportId: report.id }),
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Analysis failed");
+      }
+
+      // Navigate to the report page
+      navigate(`/report/${report.id}`);
+    } catch (e) {
+      console.error("Scan failed:", e);
+      setIsScanning(false);
+    }
+  }, [query, navigate]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleScan();
@@ -73,10 +110,10 @@ const Index = () => {
             />
             <button
               onClick={handleScan}
-              disabled={!query.trim()}
+              disabled={!query.trim() || isScanning}
               className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
-              Scan
+              {isScanning ? "Scanning..." : "Scan"}
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
