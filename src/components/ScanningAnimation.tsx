@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Terminal } from "lucide-react";
 
 const SCAN_MESSAGES = [
-  { text: "Initializing Aegis intelligence pipeline...", delay: 0 },
+  { text: "Initializing intelligence pipeline...", delay: 0 },
   { text: "Accessing arXiv research papers...", delay: 800 },
   { text: "Querying CVE vulnerability databases...", delay: 1800 },
   { text: "Scanning compliance & regulatory filings...", delay: 2800 },
@@ -83,7 +83,7 @@ const ScanningAnimation = ({ serviceName, onComplete }: ScanningAnimationProps) 
       <div className="glass-card w-full max-w-lg p-4 mx-4">
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
           <Terminal className="h-4 w-4 text-primary" />
-          <span className="font-mono text-xs text-muted-foreground">aegis-scan.log</span>
+          <span className="font-mono text-xs text-muted-foreground">security-scan.log</span>
         </div>
         <div className="space-y-1.5 font-mono text-xs min-h-[200px]">
           <AnimatePresence>
