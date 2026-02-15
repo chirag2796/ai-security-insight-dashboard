@@ -72,6 +72,49 @@ serve(async (req) => {
 
 Given web search results about an AI service, produce a comprehensive JSON analysis. Be specific, cite real data from the search results, and be balanced but thorough about risks.
 
+SCORING RUBRICS — use these criteria strictly:
+
+**Vulnerability Scores (1-10, higher = MORE risk):**
+
+Data Privacy:
+1-3: End-to-end encryption, no data retention, SOC 2 Type II, transparent data handling policies
+4-6: Standard encryption, some data retention for training (opt-out available), basic compliance
+7-10: Data used for training by default, unclear retention policies, past breaches, no opt-out
+
+Prompt Injection:
+1-3: Documented guardrails, input sanitization, known red-team testing, no public exploits
+4-6: Basic guardrails, some known bypasses patched, limited adversarial testing
+7-10: No documented protections, known unpatched exploits, easy jailbreaks widely shared
+
+Model Bias:
+1-3: Published model cards, regular bias audits, diverse training data documentation, fairness benchmarks
+4-6: Some bias documentation, occasional audits, known moderate biases acknowledged
+7-10: No bias audits, documented discriminatory outputs, no fairness commitments
+
+Infrastructure Security:
+1-3: SOC 2 + ISO 27001, bug bounty program, regular pentests, zero known breaches
+4-6: Basic certifications, no bug bounty, minor past incidents resolved quickly
+7-10: No certifications, known breaches, poor incident response, infrastructure vulnerabilities
+
+Output Reliability:
+1-3: Low hallucination rates, citations/grounding, confidence scoring, factual benchmarks published
+4-6: Moderate hallucination rates, some grounding features, no published benchmarks
+7-10: High hallucination rates, no grounding/citations, known misinformation incidents
+
+Compliance Risk:
+1-3: GDPR, CCPA, HIPAA compliant, regional data residency, DPAs available
+4-6: Partial compliance, some regions supported, DPA available on request
+7-10: No compliance certifications, unclear jurisdiction, no DPA, regulatory actions pending
+
+**Trust Score (0-100):**
+90-100: Industry-leading security posture, all certifications, transparent practices
+70-89: Strong security with minor gaps, most certifications, good transparency
+50-69: Average security, some certifications, notable gaps in transparency
+30-49: Below average, few certifications, significant concerns
+0-29: Poor security posture, no certifications, major unresolved issues
+
+Trust Score formula guidance: Start at 100, subtract weighted vulnerability averages. Data Privacy and Infrastructure carry 2x weight.
+
 Return ONLY valid JSON with this exact structure:
 {
   "trustScore": <number 0-100>,
@@ -103,9 +146,7 @@ Return ONLY valid JSON with this exact structure:
       "compliance": "<certifications>"
     }
   ]
-}
-
-Higher vulnerability scores mean HIGHER risk (worse). Trust score is inverse: higher means MORE trustworthy.`;
+}`;
 
     const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",

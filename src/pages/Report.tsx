@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, ArrowLeft, Download, ExternalLink, AlertTriangle, CheckCircle } from "lucide-react";
+import { Shield, ArrowLeft, Download, ExternalLink, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer,
@@ -47,6 +48,39 @@ const VULN_LABELS: Record<string, string> = {
   infrastructureSecurity: "Infrastructure",
   outputReliability: "Output Reliability",
   complianceRisk: "Compliance",
+};
+
+const VULN_RUBRICS: Record<string, { low: string; mid: string; high: string }> = {
+  dataPrivacy: {
+    low: "1-3: E2E encryption, no data retention, SOC 2 Type II",
+    mid: "4-6: Standard encryption, some retention, opt-out available",
+    high: "7-10: Data used for training, unclear policies, past breaches",
+  },
+  promptInjection: {
+    low: "1-3: Documented guardrails, red-team tested, no public exploits",
+    mid: "4-6: Basic guardrails, some bypasses patched",
+    high: "7-10: No protections, known unpatched exploits",
+  },
+  modelBias: {
+    low: "1-3: Published model cards, regular bias audits, fairness benchmarks",
+    mid: "4-6: Some bias docs, occasional audits",
+    high: "7-10: No audits, documented discriminatory outputs",
+  },
+  infrastructureSecurity: {
+    low: "1-3: SOC 2 + ISO 27001, bug bounty, zero breaches",
+    mid: "4-6: Basic certs, no bug bounty, minor incidents",
+    high: "7-10: No certs, known breaches, poor incident response",
+  },
+  outputReliability: {
+    low: "1-3: Low hallucination, citations/grounding, benchmarks published",
+    mid: "4-6: Moderate hallucination, some grounding",
+    high: "7-10: High hallucination, no grounding, misinformation incidents",
+  },
+  complianceRisk: {
+    low: "1-3: GDPR, CCPA, HIPAA compliant, DPAs available",
+    mid: "4-6: Partial compliance, DPA on request",
+    high: "7-10: No compliance certs, regulatory actions pending",
+  },
 };
 
 const credibilityColor: Record<string, string> = {
@@ -176,16 +210,36 @@ const Report = () => {
             <p className="text-muted-foreground leading-relaxed text-sm">
               {analysis.executiveSummary}
             </p>
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Object.entries(analysis.vulnerabilities).map(([key, val]) => (
-                <div key={key} className="bg-secondary/50 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">{VULN_LABELS[key] || key}</p>
-                  <p className={`font-mono font-bold text-lg ${val.score >= 7 ? "text-red-400" : val.score >= 4 ? "text-yellow-400" : "text-green-400"}`}>
-                    {val.score}/10
-                  </p>
-                </div>
-              ))}
-            </div>
+            <TooltipProvider delayDuration={200}>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {Object.entries(analysis.vulnerabilities).map(([key, val]) => {
+                  const rubric = VULN_RUBRICS[key];
+                  return (
+                    <Tooltip key={key}>
+                      <TooltipTrigger asChild>
+                        <div className="bg-secondary/50 rounded-lg p-3 cursor-help group relative">
+                          <div className="flex items-center gap-1 mb-1">
+                            <p className="text-xs text-muted-foreground">{VULN_LABELS[key] || key}</p>
+                            <Info className="h-3 w-3 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                          </div>
+                          <p className={`font-mono font-bold text-lg ${val.score >= 7 ? "text-red-400" : val.score >= 4 ? "text-yellow-400" : "text-green-400"}`}>
+                            {val.score}/10
+                          </p>
+                        </div>
+                      </TooltipTrigger>
+                      {rubric && (
+                        <TooltipContent side="bottom" className="max-w-xs space-y-1.5 p-3">
+                          <p className="font-semibold text-xs mb-2">Scoring Rubric</p>
+                          <p className="text-xs text-green-400">{rubric.low}</p>
+                          <p className="text-xs text-yellow-400">{rubric.mid}</p>
+                          <p className="text-xs text-red-400">{rubric.high}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </TooltipProvider>
           </motion.div>
 
           {/* Trust Score Gauge */}
