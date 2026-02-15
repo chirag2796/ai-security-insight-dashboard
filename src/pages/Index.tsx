@@ -141,7 +141,7 @@ const Index = () => {
           className="absolute bottom-8 text-center"
         >
           <p className="text-xs text-muted-foreground">
-            Powered by <span className="text-foreground font-medium">clarier.ai</span>
+            Aegis Insight
           </p>
         </motion.div>
       </div>
