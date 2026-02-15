@@ -2,15 +2,15 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Terminal } from "lucide-react";
 
+// These steps match the actual backend: Serper web search (4 queries) then OpenRouter synthesis
 const SCAN_MESSAGES = [
-  { text: "Initializing intelligence pipeline...", delay: 0 },
-  { text: "Accessing arXiv research papers...", delay: 800 },
-  { text: "Querying CVE vulnerability databases...", delay: 1800 },
-  { text: "Scanning compliance & regulatory filings...", delay: 2800 },
-  { text: "Analyzing market sentiment reports...", delay: 3800 },
-  { text: "Cross-referencing competitor data...", delay: 4800 },
-  { text: "Running bias & fairness assessments...", delay: 5800 },
-  { text: "Synthesizing intelligence report...", delay: 6800 },
+  { text: "Initializing analysis pipeline...", delay: 0 },
+  { text: "Searching web for security & vulnerability data...", delay: 600 },
+  { text: "Searching for data privacy & CVE-related coverage...", delay: 1600 },
+  { text: "Searching for competitor comparison & pricing...", delay: 2600 },
+  { text: "Searching for bias & fairness coverage...", delay: 3600 },
+  { text: "Synthesizing intelligence with AI...", delay: 4600 },
+  { text: "Generating security report...", delay: 5600 },
 ];
 
 interface ScanningAnimationProps {
