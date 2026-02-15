@@ -68,9 +68,11 @@ serve(async (req) => {
       )
       .join("\n");
 
-    const systemPrompt = `You are Aegis Insight, an AI security intelligence analyst. You produce structured security intelligence reports about AI services and products.
+    const systemPrompt = `You are an AI security intelligence analyst. You produce structured security intelligence reports about AI services and products.
 
 Given web search results about an AI service, produce a comprehensive JSON analysis. Be specific, cite real data from the search results, and be balanced but thorough about risks.
+
+IMPORTANT: In all "details" fields, include inline markdown-style references to sources from the search results. Format references as [Source Name](URL) within the text. For example: "The service encrypts data at rest [OpenAI Security Page](https://openai.com/security). A 2024 audit revealed no major issues [TechCrunch](https://techcrunch.com/...)." Every claim should be backed by at least one reference where possible.
 
 SCORING RUBRICS — use these criteria strictly:
 

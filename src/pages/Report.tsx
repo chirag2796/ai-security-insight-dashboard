@@ -167,7 +167,7 @@ const Report = () => {
             <div className="w-px h-6 bg-border/50" />
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              <span className="font-display font-bold text-foreground">Aegis Insight</span>
+              <span className="font-display font-bold text-foreground">AI Security Insight</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -228,7 +228,7 @@ const Report = () => {
                         </div>
                       </TooltipTrigger>
                       {rubric && (
-                        <TooltipContent side="bottom" className="max-w-xs space-y-1.5 p-3">
+                        <TooltipContent side="top" className="max-w-xs space-y-1.5 p-3">
                           <p className="font-semibold text-xs mb-2">Scoring Rubric</p>
                           <p className="text-xs text-green-400">{rubric.low}</p>
                           <p className="text-xs text-yellow-400">{rubric.mid}</p>
@@ -297,7 +297,7 @@ const Report = () => {
               {Object.entries(analysis.vulnerabilities).map(([key, val]) => (
                 <div key={key} className="text-sm">
                   <span className="font-medium text-foreground">{VULN_LABELS[key] || key}:</span>{" "}
-                  <span className="text-muted-foreground">{val.details}</span>
+                  <span className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: val.details.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline inline-flex items-center gap-0.5">$1<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>') }} />
                 </div>
               ))}
             </div>
@@ -320,8 +320,8 @@ const Report = () => {
                   <div className="mt-2 space-y-1.5">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Trust Score</span>
-                      <span className={`font-mono ${comp.trustScore >= 70 ? "text-green-400" : comp.trustScore >= 40 ? "text-yellow-400" : "text-red-400"}`}>
-                        {comp.trustScore}/100
+                      <span className={`font-mono ${(comp.trustScore ?? 0) >= 70 ? "text-green-400" : (comp.trustScore ?? 0) >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+                        {comp.trustScore != null ? `${comp.trustScore}/100` : "N/A"}
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">

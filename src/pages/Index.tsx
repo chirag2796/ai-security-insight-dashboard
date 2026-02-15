@@ -81,7 +81,7 @@ const Index = () => {
               <Shield className="h-8 w-8 text-primary" />
             </div>
             <h1 className="font-display text-4xl font-bold tracking-tight text-foreground">
-              Aegis <span className="text-gradient-blue">Insight</span>
+              AI Security <span className="text-gradient-blue">Insight</span>
             </h1>
           </div>
           <p className="text-muted-foreground text-lg max-w-md text-center leading-relaxed">
