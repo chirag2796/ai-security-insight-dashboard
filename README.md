@@ -1,73 +1,123 @@
-# Welcome to your Lovable project
+# AI Tools Security Insights
 
-## Project info
+AI Security Intelligence dashboard. Search for any AI tool or service and get a structured security report: vulnerabilities, compliance context, trust score, competitor comparison, and an intelligence feed with source links. Includes compliance tasks and report history for teams evaluating new AI tools.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Scan AI tools** — Enter a service name (e.g. ChatGPT, Claude) to run a web-backed security analysis.
+- **Security reports** — Trust score, vulnerability radar (data privacy, prompt injection, bias, infrastructure, compliance, etc.), executive summary, and source-backed findings.
+- **Reports history** — View and revisit past scans.
+- **Compliance** — Compliance dashboard and plans to track steps and decisions when adopting AI tools.
+- **Export** — Export reports as PDF for sharing with legal or procurement.
 
-There are several ways of editing your application.
+## Tech stack
 
-**Use Lovable**
+- **Frontend:** React 18, TypeScript, Vite, React Router
+- **UI:** Tailwind CSS, shadcn/ui (Radix), Framer Motion, Recharts
+- **Backend:** Supabase (PostgreSQL, Edge Functions)
+- **External APIs:** Serper (web search), OpenRouter (LLM synthesis)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 18+ and npm
+- A [Supabase](https://supabase.com) project
+- API keys: [Serper](https://serper.dev), [OpenRouter](https://openrouter.ai) (used as Supabase Edge Function secrets)
 
-**Use your preferred IDE**
+## Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. **Clone and install**
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+   ```bash
+   git clone <repository-url>
+   cd aegis-insight-dashboard
+   npm install
+   ```
 
-Follow these steps:
+2. **Environment variables**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+   Copy `.env.example` to `.env` and set your Supabase values (from Supabase Dashboard → Settings → API):
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+   ```bash
+   cp .env.example .env
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+   Required in `.env`:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+   - `VITE_SUPABASE_URL` — Project URL
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` — Anon/public key
+
+   Optional: `VITE_SUPABASE_PROJECT_ID` if you use it in the app.
+
+   **Backend (Supabase Edge Function secrets):** Set in Supabase Dashboard → Project Settings → Edge Functions → Secrets (or via Supabase CLI):
+
+   - `SERPER_API_KEY`
+   - `OPENROUTER_API_KEY`
+
+   The Edge Function uses these; they are not put in the frontend `.env`.
+
+3. **Database**
+
+   Apply the Supabase migration so the `reports` table (and any other tables) exist. Use the Supabase Dashboard SQL editor or:
+
+   ```bash
+   supabase db push
+   ```
+
+   (Requires [Supabase CLI](https://supabase.com/docs/guides/cli) and a linked project.)
+
+4. **Run the app**
+
+   ```bash
+   npm run dev
+   ```
+
+   The app will be available at `http://localhost:8080` (or the port shown in the terminal).
+
+## Scripts
+
+| Command        | Description                    |
+|----------------|--------------------------------|
+| `npm run dev`  | Start dev server (Vite)        |
+| `npm run build`| Production build              |
+| `npm run preview` | Preview production build   |
+| `npm run lint` | Run ESLint                     |
+| `npm run test` | Run tests (Vitest)             |
+
+## Project structure (main paths)
+
+```
+src/
+  App.tsx                 # Routes, auth, providers
+  main.tsx
+  pages/
+    Index.tsx             # Home: scan input
+    Report.tsx             # Single report view
+    ReportsHistory.tsx     # Past reports
+    ComplianceDashboard.tsx
+    CompliancePlan.tsx
+    Auth.tsx
+    NotFound.tsx
+  components/             # UI and shared components
+  integrations/supabase/  # Supabase client and types
+  lib/                    # Utils, PDF export, etc.
+  hooks/                  # useAuth, etc.
+
+supabase/
+  functions/analyze-service/  # Edge Function: Serper + OpenRouter → report
+  migrations/                 # DB schema
 ```
 
-**Edit a file directly in GitHub**
+## How analysis works
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. User enters an AI service name and starts a scan.
+2. Frontend creates a report row in Supabase and calls the `analyze-service` Edge Function.
+3. The function runs four Serper web searches (security, privacy, competitors, bias), then sends the results to OpenRouter (Gemini) to produce a structured JSON report.
+4. The report is saved to Supabase; the Report page polls until status is complete and then displays the result.
 
-**Use GitHub Codespaces**
+## Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Build the app and deploy the `dist/` output to any static host (Vercel, Netlify, Cloudflare Pages, etc.). Point the host to your Supabase project; ensure Edge Functions are deployed (e.g. `supabase functions deploy analyze-service`) and secrets are set in the Supabase project.
 
-## What technologies are used for this project?
+## License
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Private / unlicensed unless otherwise specified.
