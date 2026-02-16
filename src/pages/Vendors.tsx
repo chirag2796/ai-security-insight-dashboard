@@ -1,15 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, Search, ExternalLink, Plus } from "lucide-react";
+import { Building2, Search, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import ScanningAnimation from "@/components/ScanningAnimation";
 
 const Vendors = () => {
@@ -23,6 +24,9 @@ const Vendors = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanningName, setScanningName] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
+  const [editVendor, setEditVendor] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ name: "", website: "" });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchVendors = async () => {
     if (!profile?.company_id) return;
@@ -56,12 +60,71 @@ const Vendors = () => {
     }
   }, [vendorName, vendorUrl, profile, toast]);
 
+  const openEdit = (v: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditVendor(v);
+    setEditForm({ name: v.name, website: v.website || "" });
+  };
+
+  const handleEditSave = async () => {
+    if (!editVendor || !editForm.name.trim()) return;
+    const { error } = await supabase.from("vendors").update({
+      name: editForm.name.trim(),
+      website: editForm.website.trim() || null,
+    }).eq("id", editVendor.id);
+    if (error) {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Vendor updated" });
+    }
+    setEditVendor(null);
+    fetchVendors();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("vendors").delete().eq("id", deleteId);
+    if (error) {
+      toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Vendor deleted" });
+    }
+    setDeleteId(null);
+    fetchVendors();
+  };
+
   return (
     <>
       <AnimatePresence>
         {isScanning && <ScanningAnimation serviceName={scanningName} />}
       </AnimatePresence>
 
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this vendor and its research data.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit vendor dialog */}
+      <Dialog open={!!editVendor} onOpenChange={() => setEditVendor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Vendor</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div><Label>Name</Label><Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} /></div>
+            <div><Label>Website</Label><Input value={editForm.website} onChange={(e) => setEditForm({ ...editForm, website: e.target.value })} /></div>
+            <Button onClick={handleEditSave} className="w-full">Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Vendor detail dialog */}
       <Dialog open={!!selectedVendor} onOpenChange={() => setSelectedVendor(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{selectedVendor?.name}</DialogTitle></DialogHeader>
@@ -126,16 +189,17 @@ const Vendors = () => {
                   <TableHead>Website</TableHead>
                   <TableHead>Trust Score</TableHead>
                   <TableHead>Last Updated</TableHead>
+                  <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
                 ) : vendors.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No vendors yet</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No vendors yet</TableCell></TableRow>
                 ) : (
                   vendors.map((v) => (
-                    <TableRow key={v.id} className="cursor-pointer hover:bg-accent/30" onClick={() => setSelectedVendor(v)}>
+                    <TableRow key={v.id} className="cursor-pointer hover:bg-accent/30 group" onClick={() => setSelectedVendor(v)}>
                       <TableCell className="font-medium flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-primary" />
                         {v.name}
@@ -153,6 +217,16 @@ const Vendors = () => {
                         ) : "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">{new Date(v.updated_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => openEdit(v, e)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(v.id); }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
