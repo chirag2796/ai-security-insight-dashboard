@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
-import { ClipboardList, CheckCircle, Clock, ArrowRight } from "lucide-react";
+import { ClipboardList, CheckCircle, Clock, ArrowRight, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 
 interface CompliancePlan {
@@ -19,6 +24,16 @@ const ComplianceDashboard = () => {
   const { profile } = useAuth();
   const [plans, setPlans] = useState<CompliancePlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const handleDeletePlan = async (e: React.MouseEvent, planId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await supabase.from("compliance_steps").delete().eq("plan_id", planId);
+    await supabase.from("compliance_plans").delete().eq("id", planId);
+    setPlans((prev) => prev.filter((p) => p.id !== planId));
+    toast({ title: "Compliance plan deleted" });
+  };
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -69,7 +84,7 @@ const ComplianceDashboard = () => {
                 </h2>
                 <div className="grid gap-4">
                   {inProgress.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} />
+                    <PlanCard key={plan.id} plan={plan} onDelete={handleDeletePlan} />
                   ))}
                 </div>
               </section>
@@ -83,7 +98,7 @@ const ComplianceDashboard = () => {
                 </h2>
                 <div className="grid gap-4">
                   {completed.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} />
+                    <PlanCard key={plan.id} plan={plan} onDelete={handleDeletePlan} />
                   ))}
                 </div>
               </section>
@@ -95,9 +110,10 @@ const ComplianceDashboard = () => {
   );
 };
 
-const PlanCard = ({ plan }: { plan: CompliancePlan }) => (
-  <Link to={`/compliance/${plan.id}`}>
-    <div className="glass-card p-5 hover:border-primary/30 transition-colors group">
+const PlanCard = ({ plan, onDelete }: { plan: CompliancePlan; onDelete: (e: React.MouseEvent, id: string) => void }) => {
+  const navigate = useNavigate();
+  return (
+    <div onClick={() => navigate(`/compliance/${plan.id}`)} className="glass-card p-5 hover:border-primary/30 transition-colors group cursor-pointer">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
@@ -107,10 +123,29 @@ const PlanCard = ({ plan }: { plan: CompliancePlan }) => (
             Updated {new Date(plan.updated_at).toLocaleDateString()}
           </p>
         </div>
-        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        <div className="flex items-center gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete compliance plan?</AlertDialogTitle>
+                <AlertDialogDescription>This will permanently delete this plan and all its steps.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={(e) => onDelete(e, plan.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        </div>
       </div>
     </div>
-  </Link>
-);
+  );
+};
 
 export default ComplianceDashboard;

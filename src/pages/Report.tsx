@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, ArrowLeft, Download, ExternalLink, AlertTriangle, CheckCircle, Info, ClipboardList, Loader2 } from "lucide-react";
+import { Shield, ArrowLeft, Download, ExternalLink, AlertTriangle, CheckCircle, Info, ClipboardList, Loader2, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -161,6 +165,21 @@ const Report = () => {
 
   const scoreColor = analysis.trustScore >= 70 ? "text-green-400" : analysis.trustScore >= 40 ? "text-yellow-400" : "text-red-400";
 
+  const handleDeleteReport = async () => {
+    if (!id) return;
+    // Delete associated compliance steps and plans first
+    const { data: plans } = await supabase.from("compliance_plans").select("id").eq("report_id", id);
+    if (plans?.length) {
+      for (const p of plans) {
+        await supabase.from("compliance_steps").delete().eq("plan_id", p.id);
+      }
+      await supabase.from("compliance_plans").delete().eq("report_id", id);
+    }
+    await supabase.from("reports").delete().eq("id", id);
+    toast({ title: "Report deleted" });
+    navigate("/reports");
+  };
+
   const handleStartCompliance = async () => {
     if (!session || !report) return;
     setGeneratingCompliance(true);
@@ -218,6 +237,24 @@ const Report = () => {
             <Download className="h-4 w-4" />
             Export PDF
           </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-destructive/30 text-destructive font-medium text-sm hover:bg-destructive/10 transition-colors">
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this report?</AlertDialogTitle>
+                <AlertDialogDescription>This will permanently delete this report and any associated compliance plans. This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteReport} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
