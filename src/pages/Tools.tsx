@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Wrench, ExternalLink, Filter, Pencil, Trash2 } from "lucide-react";
@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,40 @@ const TOOL_CATEGORIES = [
 
 const TOOL_STATUSES = ["pending", "approved", "rejected", "sunset"] as const;
 const RISK_LEVELS = ["high", "medium", "low"] as const;
+
+// Default well-known enterprise tools for autocomplete
+const DEFAULT_TOOLS: { name: string; url: string; category: string; description: string }[] = [
+  { name: "GitHub Copilot", url: "https://github.com/features/copilot", category: "Software Development", description: "AI pair programmer that suggests code completions" },
+  { name: "Cursor", url: "https://cursor.com", category: "Software Development", description: "AI-first code editor" },
+  { name: "ChatGPT", url: "https://chat.openai.com", category: "AI & Machine Learning", description: "Conversational AI assistant by OpenAI" },
+  { name: "OpenAI API", url: "https://platform.openai.com", category: "AI & Machine Learning", description: "API access to GPT and other models" },
+  { name: "Claude", url: "https://claude.ai", category: "AI & Machine Learning", description: "AI assistant by Anthropic" },
+  { name: "Gemini", url: "https://gemini.google.com", category: "AI & Machine Learning", description: "Google's multimodal AI model" },
+  { name: "Notion AI", url: "https://notion.so", category: "Productivity", description: "AI-enhanced workspace and documentation" },
+  { name: "Slack", url: "https://slack.com", category: "Communication", description: "Team messaging and collaboration" },
+  { name: "Zoom", url: "https://zoom.us", category: "Communication", description: "Video conferencing and meetings" },
+  { name: "Microsoft Teams", url: "https://teams.microsoft.com", category: "Communication", description: "Team collaboration and video calls" },
+  { name: "Fireflies.ai", url: "https://fireflies.ai", category: "Communication", description: "AI meeting assistant and transcription" },
+  { name: "Otter.ai", url: "https://otter.ai", category: "Communication", description: "AI meeting notes and transcription" },
+  { name: "Microsoft Copilot", url: "https://copilot.microsoft.com", category: "Productivity", description: "AI assistant for Microsoft 365" },
+  { name: "Grammarly", url: "https://grammarly.com", category: "Productivity", description: "AI writing assistant" },
+  { name: "Midjourney", url: "https://midjourney.com", category: "Design", description: "AI image generation" },
+  { name: "Figma AI", url: "https://figma.com", category: "Design", description: "AI-powered design tool features" },
+  { name: "Jasper", url: "https://jasper.ai", category: "Sales & Marketing", description: "AI content creation for marketing" },
+  { name: "Salesforce Einstein", url: "https://salesforce.com", category: "Sales & Marketing", description: "AI-powered CRM analytics" },
+  { name: "HubSpot AI", url: "https://hubspot.com", category: "Sales & Marketing", description: "AI-powered marketing automation" },
+  { name: "Tableau", url: "https://tableau.com", category: "Data & Analytics", description: "Data visualization and analytics" },
+  { name: "Power BI", url: "https://powerbi.microsoft.com", category: "Data & Analytics", description: "Business intelligence and reporting" },
+  { name: "Copilot for Finance", url: "https://microsoft.com", category: "Finance", description: "AI assistant for financial workflows" },
+  { name: "Jira", url: "https://atlassian.com/jira", category: "Project Management", description: "Project tracking and management" },
+  { name: "Linear", url: "https://linear.app", category: "Project Management", description: "Modern project management tool" },
+  { name: "Intercom Fin", url: "https://intercom.com", category: "Customer Support", description: "AI-powered customer support agent" },
+  { name: "Zendesk AI", url: "https://zendesk.com", category: "Customer Support", description: "AI-powered support automation" },
+  { name: "Perplexity", url: "https://perplexity.ai", category: "AI & Machine Learning", description: "AI-powered search and research" },
+  { name: "Copilot Studio", url: "https://copilotstudio.microsoft.com", category: "AI & Machine Learning", description: "Build custom AI copilots" },
+  { name: "AWS Bedrock", url: "https://aws.amazon.com/bedrock", category: "AI & Machine Learning", description: "Managed foundation model service" },
+  { name: "Google Vertex AI", url: "https://cloud.google.com/vertex-ai", category: "AI & Machine Learning", description: "Google Cloud AI platform" },
+];
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
@@ -65,6 +99,9 @@ const Tools = () => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [customCategory, setCustomCategory] = useState("");
+  const [nameQuery, setNameQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const fetchTools = async () => {
     if (!profile?.company_id) return;
@@ -79,6 +116,8 @@ const Tools = () => {
     setEditTool(null);
     setFormData({ ...emptyTool });
     setCustomCategory("");
+    setNameQuery("");
+    setShowSuggestions(false);
     setDialogOpen(true);
   };
 
@@ -93,9 +132,33 @@ const Tools = () => {
       status: tool.status || "pending",
       risk_level: tool.risk_level || "",
     });
+    setNameQuery(tool.name);
     setCustomCategory(isPreset ? "" : (tool.category || ""));
+    setShowSuggestions(false);
     setDialogOpen(true);
   };
+
+  const selectDefaultTool = (dt: typeof DEFAULT_TOOLS[0]) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: dt.name,
+      url: dt.url,
+      category: dt.category,
+      description: dt.description,
+    }));
+    setNameQuery(dt.name);
+    setShowSuggestions(false);
+  };
+
+  const handleNameChange = (val: string) => {
+    setNameQuery(val);
+    setFormData((prev) => ({ ...prev, name: val }));
+    setShowSuggestions(val.length > 0);
+  };
+
+  const filteredDefaults = DEFAULT_TOOLS.filter((dt) =>
+    dt.name.toLowerCase().includes(nameQuery.toLowerCase())
+  ).slice(0, 8);
 
   const handleSave = async () => {
     if (!formData.name.trim() || !profile?.company_id || !user) return;
@@ -172,9 +235,40 @@ const Tools = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editTool ? "Edit Tool" : "Add New Tool"}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
-            <div>
+            <div className="relative">
               <Label>Name *</Label>
-              <Input placeholder="Tool name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <Input
+                ref={nameInputRef}
+                placeholder="Search or type a tool name..."
+                value={nameQuery}
+                onChange={(e) => handleNameChange(e.target.value)}
+                onFocus={() => nameQuery.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                autoComplete="off"
+              />
+              {showSuggestions && filteredDefaults.length > 0 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
+                  {filteredDefaults.map((dt) => (
+                    <button
+                      key={dt.name}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent/50 text-sm flex items-center justify-between"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectDefaultTool(dt)}
+                    >
+                      <div>
+                        <span className="font-medium text-foreground">{dt.name}</span>
+                        <span className="text-muted-foreground ml-2 text-xs">{dt.category}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {nameQuery && filteredDefaults.length === 0 && showSuggestions && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg px-3 py-2 text-sm text-muted-foreground">
+                  No match — "{nameQuery}" will be added as a new tool
+                </div>
+              )}
             </div>
             <div>
               <Label>URL</Label>
