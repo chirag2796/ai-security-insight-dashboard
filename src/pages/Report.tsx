@@ -351,7 +351,8 @@ const Report = () => {
             </h2>
             <div className="space-y-4">
               {analysis.competitors?.map((comp, i) => {
-                const renderField = (text: string) => {
+                const renderField = (text: string | null | undefined) => {
+                  if (!text) return <span>N/A</span>;
                   // Replace URLs with clickable icons, keep non-URL text
                   const urlRegex = /(https?:\/\/[^\s,)]+)/g;
                   const parts = text.split(urlRegex);
