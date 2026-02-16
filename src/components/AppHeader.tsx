@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Shield, LogOut, ClipboardList, User } from "lucide-react";
+import { Shield, LogOut, ClipboardList, FileText, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const AppHeader = () => {
@@ -14,6 +14,13 @@ const AppHeader = () => {
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link
+            to="/reports"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            Reports
+          </Link>
           <Link
             to="/compliance"
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
