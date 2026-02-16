@@ -16,7 +16,7 @@ import {
 import TrustGauge from "@/components/TrustGauge";
 import { generatePDF } from "@/lib/pdf-export";
 import { useToast } from "@/hooks/use-toast";
-import AppHeader from "@/components/AppHeader";
+
 
 interface VulnCategory {
   score: number;
@@ -211,12 +211,11 @@ const Report = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background grid-bg">
-      <AppHeader />
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <Link to="/reports" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
           <ArrowLeft className="h-4 w-4" />
-          Back to Search
+          Back to Reports
         </Link>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground font-mono">

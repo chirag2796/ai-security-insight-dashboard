@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import AppHeader from "@/components/AppHeader";
 import { FileText, ArrowRight, Clock, Trash2 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -55,62 +54,59 @@ const ReportsHistory = () => {
   }, [profile?.company_id]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      <main className="max-w-4xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-display font-bold text-foreground mb-6">Past Reports</h1>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-display font-bold text-foreground mb-6">Past Reports</h1>
 
-        {loading ? (
-          <p className="text-muted-foreground">Loading…</p>
-        ) : reports.length === 0 ? (
-          <p className="text-muted-foreground">No reports yet. Run your first scan from the <Link to="/" className="text-primary underline">home page</Link>.</p>
-        ) : (
-          <div className="space-y-3">
-            {reports.map((r) => (
-              <div
-                key={r.id}
-                onClick={() => navigate(`/report/${r.id}`)}
-                className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors group cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">{r.service_name}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {new Date(r.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {r.trust_score !== null && (
-                    <span className="text-sm font-semibold text-primary">{r.trust_score}/100</span>
-                  )}
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">{r.status}</span>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete report?</AlertDialogTitle>
-                        <AlertDialogDescription>This will permanently delete this report and any associated compliance plans.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={(e) => handleDelete(e, r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+      {loading ? (
+        <p className="text-muted-foreground">Loading…</p>
+      ) : reports.length === 0 ? (
+        <p className="text-muted-foreground">No reports yet. Run a scan from the Requests page.</p>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r) => (
+            <div
+              key={r.id}
+              onClick={() => navigate(`/reports/${r.id}`)}
+              className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors group cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">{r.service_name}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
+              <div className="flex items-center gap-3">
+                {r.trust_score !== null && (
+                  <span className="text-sm font-semibold text-primary">{r.trust_score}/100</span>
+                )}
+                <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">{r.status}</span>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete report?</AlertDialogTitle>
+                      <AlertDialogDescription>This will permanently delete this report and any associated compliance plans.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={(e) => handleDelete(e, r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

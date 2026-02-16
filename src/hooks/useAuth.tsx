@@ -75,7 +75,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, companyName: string, existingCompanyId?: string) => {
-    // Sign up the user FIRST so they're authenticated
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -85,7 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) return { error };
     if (!data.user) return { error: { message: "Signup failed — no user returned" } };
 
-    // Wait for session to be set on the client before making authenticated calls
     if (data.session) {
       await supabase.auth.setSession({
         access_token: data.session.access_token,
@@ -93,7 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
     }
 
-    // Now the user is authenticated, create company & profile
     let companyId = existingCompanyId;
 
     if (!companyId) {
@@ -121,7 +118,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: profileError };
     }
 
-    // Fetch profile so header shows immediately
+    // Create member record with owner role for new org
+    await supabase.from("members").insert({
+      org_id: companyId!,
+      user_id: data.user.id,
+      role: "owner",
+    });
+
     await fetchProfile(data.user.id);
 
     return { error: null };
