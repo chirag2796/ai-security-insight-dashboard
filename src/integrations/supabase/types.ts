@@ -471,6 +471,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           created_at: string
@@ -519,12 +540,20 @@ export type Database = {
         Returns: Database["public"]["Enums"]["member_role"]
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
     }
     Enums: {
+      app_role: "admin" | "user"
       control_status: "compliant" | "non_compliant" | "not_applicable"
       member_role: "owner" | "admin" | "member"
       risk_level: "high" | "medium" | "low"
@@ -657,6 +686,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       control_status: ["compliant", "non_compliant", "not_applicable"],
       member_role: ["owner", "admin", "member"],
       risk_level: ["high", "medium", "low"],

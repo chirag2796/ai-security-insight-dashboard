@@ -3,8 +3,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Shield } from "lucide-react";
 import { motion } from "framer-motion";
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+}
+
+const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -20,6 +25,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
 
   return <>{children}</>;
 };
