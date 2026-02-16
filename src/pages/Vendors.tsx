@@ -142,8 +142,8 @@ const Vendors = () => {
                       </TableCell>
                       <TableCell>
                         {v.website ? (
-                          <a href={v.website} target="_blank" rel="noopener" className="flex items-center gap-1 text-primary hover:underline text-sm" onClick={(e) => e.stopPropagation()}>
-                            {new URL(v.website).hostname} <ExternalLink className="h-3 w-3" />
+                          <a href={v.website.startsWith("http") ? v.website : `https://${v.website}`} target="_blank" rel="noopener" className="flex items-center gap-1 text-primary hover:underline text-sm" onClick={(e) => e.stopPropagation()}>
+                            {(() => { try { return new URL(v.website.startsWith("http") ? v.website : `https://${v.website}`).hostname; } catch { return v.website; } })()} <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : "—"}
                       </TableCell>
