@@ -75,6 +75,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, companyName: string, existingCompanyId?: string) => {
+    // Sign up the user FIRST so they're authenticated
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+
+    if (error) return { error };
+    if (!data.user) return { error: { message: "Signup failed — no user returned" } };
+
+    // Now the user is authenticated, create company & profile
     let companyId = existingCompanyId;
 
     if (!companyId) {
@@ -87,24 +98,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       companyId = newCompany.id;
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-
-    if (error) return { error };
-
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: data.user.id,
-          full_name: fullName,
-          company_id: companyId!,
-        });
-      if (profileError) return { error: profileError };
-    }
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({
+        user_id: data.user.id,
+        full_name: fullName,
+        company_id: companyId!,
+      });
+    if (profileError) return { error: profileError };
 
     return { error: null };
   };
