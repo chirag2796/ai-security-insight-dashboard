@@ -74,58 +74,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, companyName: string, existingCompanyId?: string) => {
+  const signUp = async (email: string, password: string, fullName: string, companyName: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { full_name: fullName, company_name: companyName },
+      },
     });
 
     if (error) return { error };
     if (!data.user) return { error: { message: "Signup failed — no user returned" } };
 
+    // Trigger handles company/profile/member creation server-side
+    // Just fetch the profile once session is ready
     if (data.session) {
-      await supabase.auth.setSession({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      });
+      await fetchProfile(data.user.id);
     }
-
-    let companyId = existingCompanyId;
-
-    if (!companyId) {
-      const { data: newCompany, error: companyError } = await supabase
-        .from("companies")
-        .insert({ name: companyName })
-        .select()
-        .single();
-      if (companyError) {
-        console.error("Company creation failed:", companyError);
-        return { error: companyError };
-      }
-      companyId = newCompany.id;
-    }
-
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert({
-        user_id: data.user.id,
-        full_name: fullName,
-        company_id: companyId!,
-      });
-    if (profileError) {
-      console.error("Profile creation failed:", profileError);
-      return { error: profileError };
-    }
-
-    // Create member record with owner role for new org
-    await supabase.from("members").insert({
-      org_id: companyId!,
-      user_id: data.user.id,
-      role: "owner",
-    });
-
-    await fetchProfile(data.user.id);
 
     return { error: null };
   };
