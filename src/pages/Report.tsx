@@ -350,28 +350,44 @@ const Report = () => {
               Competitive Context
             </h2>
             <div className="space-y-4">
-              {analysis.competitors?.map((comp, i) => (
-                <div key={i} className="bg-secondary/50 rounded-lg p-3">
-                  <p className="font-medium text-foreground text-sm">{comp.name}</p>
-                  <div className="mt-2 space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Trust Score</span>
-                      <span className={`font-mono ${(comp.trustScore ?? 0) >= 70 ? "text-green-400" : (comp.trustScore ?? 0) >= 40 ? "text-yellow-400" : "text-red-400"}`}>
-                        {comp.trustScore != null ? `${comp.trustScore}/100` : "N/A"}
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <span className="text-foreground">Pricing:</span> {comp.pricing}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <span className="text-foreground">Security:</span> {comp.securityFeatures}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <span className="text-foreground">Compliance:</span> {comp.compliance}
+              {analysis.competitors?.map((comp, i) => {
+                const renderField = (text: string) => {
+                  // Replace URLs with clickable icons, keep non-URL text
+                  const urlRegex = /(https?:\/\/[^\s,)]+)/g;
+                  const parts = text.split(urlRegex);
+                  return parts.map((part, idx) =>
+                    urlRegex.test(part) ? (
+                      <a key={idx} href={part} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:text-primary/80 transition-colors mx-0.5">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : (
+                      <span key={idx}>{part}</span>
+                    )
+                  );
+                };
+                return (
+                  <div key={i} className="bg-secondary/50 rounded-lg p-3">
+                    <p className="font-medium text-foreground text-sm">{comp.name}</p>
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Trust Score</span>
+                        <span className={`font-mono ${(comp.trustScore ?? 0) >= 70 ? "text-green-400" : (comp.trustScore ?? 0) >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+                          {comp.trustScore != null ? `${comp.trustScore}/100` : "N/A"}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <span className="text-foreground">Pricing:</span> {renderField(comp.pricing)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <span className="text-foreground">Security:</span> {renderField(comp.securityFeatures)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <span className="text-foreground">Compliance:</span> {renderField(comp.compliance)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
 
