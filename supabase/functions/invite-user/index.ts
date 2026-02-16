@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "GRC Platform <onboarding@resend.dev>",
+        from: "GRC Platform <noreply@deep-ai-audit.cgupta.tech>",
         to: [email],
         subject: `You're invited to join ${orgName}`,
         html: `
