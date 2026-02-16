@@ -2,3 +2,6 @@ project_id = "katpapjkrwptgwmoklpy"
 
 [functions.analyze-service]
 verify_jwt = false
+
+[functions.generate-compliance]
+verify_jwt = false
