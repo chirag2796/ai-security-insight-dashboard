@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
@@ -110,9 +110,10 @@ const ComplianceDashboard = () => {
   );
 };
 
-const PlanCard = ({ plan, onDelete }: { plan: CompliancePlan; onDelete: (e: React.MouseEvent, id: string) => void }) => (
-  <Link to={`/compliance/${plan.id}`}>
-    <div className="glass-card p-5 hover:border-primary/30 transition-colors group">
+const PlanCard = ({ plan, onDelete }: { plan: CompliancePlan; onDelete: (e: React.MouseEvent, id: string) => void }) => {
+  const navigate = useNavigate();
+  return (
+    <div onClick={() => navigate(`/compliance/${plan.id}`)} className="glass-card p-5 hover:border-primary/30 transition-colors group cursor-pointer">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
@@ -125,11 +126,11 @@ const PlanCard = ({ plan, onDelete }: { plan: CompliancePlan; onDelete: (e: Reac
         <div className="flex items-center gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <button onClick={(e) => e.preventDefault()} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+              <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                 <Trash2 className="h-4 w-4" />
               </button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete compliance plan?</AlertDialogTitle>
                 <AlertDialogDescription>This will permanently delete this plan and all its steps.</AlertDialogDescription>
@@ -144,7 +145,7 @@ const PlanCard = ({ plan, onDelete }: { plan: CompliancePlan; onDelete: (e: Reac
         </div>
       </div>
     </div>
-  </Link>
-);
+  );
+};
 
 export default ComplianceDashboard;
