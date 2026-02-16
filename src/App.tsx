@@ -10,6 +10,7 @@ import Report from "./pages/Report";
 import Auth from "./pages/Auth";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import CompliancePlan from "./pages/CompliancePlan";
+import ReportsHistory from "./pages/ReportsHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/report/:id" element={<ProtectedRoute><Report /></ProtectedRoute>} />
             <Route path="/compliance" element={<ProtectedRoute><ComplianceDashboard /></ProtectedRoute>} />
             <Route path="/compliance/:id" element={<ProtectedRoute><CompliancePlan /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><ReportsHistory /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
