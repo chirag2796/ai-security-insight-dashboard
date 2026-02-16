@@ -38,7 +38,7 @@ serve(async (req) => {
       .from("profiles")
       .select("company_id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("User profile not found");
 
