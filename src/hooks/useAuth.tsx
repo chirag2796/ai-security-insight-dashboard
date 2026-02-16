@@ -85,6 +85,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) return { error };
     if (!data.user) return { error: { message: "Signup failed — no user returned" } };
 
+    // Wait for session to be set on the client before making authenticated calls
+    if (data.session) {
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+    }
+
     // Now the user is authenticated, create company & profile
     let companyId = existingCompanyId;
 
@@ -94,7 +102,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .insert({ name: companyName })
         .select()
         .single();
-      if (companyError) return { error: companyError };
+      if (companyError) {
+        console.error("Company creation failed:", companyError);
+        return { error: companyError };
+      }
       companyId = newCompany.id;
     }
 
@@ -105,7 +116,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         full_name: fullName,
         company_id: companyId!,
       });
-    if (profileError) return { error: profileError };
+    if (profileError) {
+      console.error("Profile creation failed:", profileError);
+      return { error: profileError };
+    }
+
+    // Fetch profile so header shows immediately
+    await fetchProfile(data.user.id);
 
     return { error: null };
   };
