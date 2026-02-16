@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Settings, Users, Activity, Shield } from "lucide-react";
+import { Settings, Users, Activity, Shield, UserPlus, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const roleColors: Record<string, string> = {
   owner: "bg-primary/10 text-primary border-primary/20",
@@ -24,6 +25,10 @@ const Admin = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [activity, setActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   useEffect(() => {
     if (!profile?.company_id) return;
@@ -51,6 +56,35 @@ const Admin = () => {
     else toast({ title: "Organization updated" });
   };
 
+  const handleInvite = async () => {
+    if (!inviteEmail) return;
+    setInviting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ email: inviteEmail, full_name: inviteName }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast({ title: "Invite failed", description: result.error, variant: "destructive" });
+      } else {
+        toast({ title: "Invite sent!", description: `Invitation email sent to ${inviteEmail}` });
+        setInviteEmail("");
+        setInviteName("");
+        setInviteOpen(false);
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setInviting(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -58,12 +92,66 @@ const Admin = () => {
         <p className="text-muted-foreground text-sm mt-1">Organization settings and management</p>
       </motion.div>
 
-      <Tabs defaultValue="settings">
+      <Tabs defaultValue="members">
         <TabsList>
-          <TabsTrigger value="settings" className="gap-2"><Settings className="h-4 w-4" /> Settings</TabsTrigger>
           <TabsTrigger value="members" className="gap-2"><Users className="h-4 w-4" /> Members</TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2"><Settings className="h-4 w-4" /> Settings</TabsTrigger>
           <TabsTrigger value="activity" className="gap-2"><Activity className="h-4 w-4" /> Activity Log</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="members" className="mt-6">
+          <Card className="glass-card border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Team Members</CardTitle>
+              <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-2">
+                    <UserPlus className="h-4 w-4" /> Invite User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Invite Team Member</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-2">
+                    <p className="text-sm text-muted-foreground">
+                      Send an invitation email. The user will be added to your organization with the <Badge variant="outline" className="ml-1">User</Badge> role.
+                    </p>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Full Name</label>
+                      <Input value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Jane Doe" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Email</label>
+                      <Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="jane@company.com" />
+                    </div>
+                    <Button onClick={handleInvite} disabled={inviting || !inviteEmail} className="w-full gap-2">
+                      <Mail className="h-4 w-4" />
+                      {inviting ? "Sending..." : "Send Invitation"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              {members.length === 0 ? (
+                <p className="text-muted-foreground text-sm">No members yet. Invite your first team member above.</p>
+              ) : (
+                <div className="space-y-3">
+                  {members.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/20">
+                      <div className="flex items-center gap-3">
+                        <Shield className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">{m.profiles?.full_name || "Unknown"}</span>
+                      </div>
+                      <Badge variant="outline" className={roleColors[m.role] || ""}>{m.role}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="settings" className="mt-6">
           <Card className="glass-card border-border/50">
@@ -78,29 +166,6 @@ const Admin = () => {
                 <Input value={orgSlug} onChange={(e) => setOrgSlug(e.target.value)} placeholder="my-org" />
               </div>
               <Button onClick={handleSaveOrg}>Save Changes</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="members" className="mt-6">
-          <Card className="glass-card border-border/50">
-            <CardHeader><CardTitle>Members</CardTitle></CardHeader>
-            <CardContent>
-              {members.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No members found. Members are automatically created when users join the organization.</p>
-              ) : (
-                <div className="space-y-3">
-                  {members.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/20">
-                      <div className="flex items-center gap-3">
-                        <Shield className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium text-foreground">{m.profiles?.full_name || "Unknown"}</span>
-                      </div>
-                      <Badge variant="outline" className={roleColors[m.role] || ""}>{m.role}</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

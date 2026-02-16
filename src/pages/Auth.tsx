@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
@@ -12,9 +11,6 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
-  const [useExisting, setUseExisting] = useState(false);
-  const [existingCompanies, setExistingCompanies] = useState<{ id: string; name: string }[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const { signIn, signUp, user } = useAuth();
@@ -24,10 +20,6 @@ const Auth = () => {
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
-
-  // Fetch companies for "join existing" flow — use service role via edge function not needed,
-  // we'll just let users type the company name since RLS restricts select to own company.
-  // For signup, they just type a name — if it exists, we create, if not, we create new.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +31,7 @@ const Auth = () => {
         if (error) {
           toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
         } else {
-          toast({ title: "Account created!", description: "You're now signed in." });
+          toast({ title: "Admin account created!", description: "You're now signed in as an admin." });
         }
       } else {
         const { error } = await signIn(email, password);
@@ -69,9 +61,14 @@ const Auth = () => {
         </div>
 
         <div className="glass-card p-8">
-          <h2 className="text-xl font-display font-semibold text-foreground mb-6 text-center">
-            {isSignUp ? "Create Account" : "Sign In"}
+          <h2 className="text-xl font-display font-semibold text-foreground mb-2 text-center">
+            {isSignUp ? "Create Admin Account" : "Sign In"}
           </h2>
+          {isSignUp && (
+            <p className="text-xs text-muted-foreground text-center mb-6">
+              Sign up creates an admin account with a new organization. Team members are invited from the Admin page.
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
@@ -88,16 +85,15 @@ const Auth = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Company Name</label>
+                  <label className="text-sm text-muted-foreground mb-1 block">Organization Name</label>
                   <input
                     type="text"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     required
                     className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-foreground text-sm outline-none focus:border-primary/50 transition-colors"
-                    placeholder="Enter or create a company"
+                    placeholder="Acme Corp"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">A new company will be created if it doesn't exist.</p>
                 </div>
               </>
             )}
@@ -130,17 +126,17 @@ const Auth = () => {
               disabled={submitting}
               className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {submitting ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
+              {submitting ? "Please wait..." : isSignUp ? "Create Admin Account" : "Sign In"}
             </button>
           </form>
 
           <p className="text-sm text-muted-foreground text-center mt-4">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            {isSignUp ? "Already have an account?" : "Need to create an organization?"}{" "}
             <button
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-primary hover:underline"
             >
-              {isSignUp ? "Sign In" : "Sign Up"}
+              {isSignUp ? "Sign In" : "Sign Up as Admin"}
             </button>
           </p>
         </div>
