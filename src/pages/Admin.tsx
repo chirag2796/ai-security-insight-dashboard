@@ -17,6 +17,11 @@ const roleColors: Record<string, string> = {
   member: "bg-muted text-muted-foreground border-border",
 };
 
+const statusColors: Record<string, string> = {
+  active: "bg-green-500/10 text-green-400 border-green-500/20",
+  pending_signup: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+};
+
 const Admin = () => {
   const { profile, user } = useAuth();
   const { toast } = useToast();
@@ -47,6 +52,7 @@ const Admin = () => {
       setLoading(false);
     };
     fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.company_id]);
 
   const handleSaveOrg = async () => {
@@ -54,6 +60,16 @@ const Admin = () => {
     const { error } = await supabase.from("companies").update({ name: orgName, slug: orgSlug }).eq("id", profile.company_id);
     if (error) toast({ title: "Failed to update", description: error.message, variant: "destructive" });
     else toast({ title: "Organization updated" });
+  };
+
+  const refreshData = async () => {
+    if (!profile?.company_id) return;
+    const [membersRes, activityRes] = await Promise.all([
+      supabase.from("members").select("*, profiles(full_name)").eq("org_id", profile.company_id),
+      supabase.from("activity_log").select("*").eq("org_id", profile.company_id).order("created_at", { ascending: false }).limit(50),
+    ]);
+    setMembers(membersRes.data || []);
+    setActivity(activityRes.data || []);
   };
 
   const handleInvite = async () => {
@@ -77,6 +93,7 @@ const Admin = () => {
         setInviteEmail("");
         setInviteName("");
         setInviteOpen(false);
+        await refreshData();
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -142,9 +159,21 @@ const Admin = () => {
                     <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/20">
                       <div className="flex items-center gap-3">
                         <Shield className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium text-foreground">{m.profiles?.full_name || "Unknown"}</span>
+                        <div>
+                          <span className="text-sm font-medium text-foreground">
+                            {m.profiles?.full_name || m.invite_email || "Unknown"}
+                          </span>
+                          {m.invite_email && m.invite_status === "pending_signup" && (
+                            <p className="text-xs text-muted-foreground">{m.invite_email}</p>
+                          )}
+                        </div>
                       </div>
-                      <Badge variant="outline" className={roleColors[m.role] || ""}>{m.role}</Badge>
+                      <div className="flex items-center gap-2">
+                        {m.invite_status === "pending_signup" && (
+                          <Badge variant="outline" className={statusColors.pending_signup}>Pending Signup</Badge>
+                        )}
+                        <Badge variant="outline" className={roleColors[m.role] || ""}>{m.role}</Badge>
+                      </div>
                     </div>
                   ))}
                 </div>
