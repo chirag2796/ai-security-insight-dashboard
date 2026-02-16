@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
-import { FileText, ArrowRight, Clock } from "lucide-react";
+import { FileText, ArrowRight, Clock, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReportRow {
   id: string;
@@ -17,6 +22,22 @@ const ReportsHistory = () => {
   const { profile } = useAuth();
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const handleDelete = async (e: React.MouseEvent, reportId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { data: plans } = await supabase.from("compliance_plans").select("id").eq("report_id", reportId);
+    if (plans?.length) {
+      for (const p of plans) {
+        await supabase.from("compliance_steps").delete().eq("plan_id", p.id);
+      }
+      await supabase.from("compliance_plans").delete().eq("report_id", reportId);
+    }
+    await supabase.from("reports").delete().eq("id", reportId);
+    setReports((prev) => prev.filter((r) => r.id !== reportId));
+    toast({ title: "Report deleted" });
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -65,6 +86,23 @@ const ReportsHistory = () => {
                     <span className="text-sm font-semibold text-primary">{r.trust_score}/100</span>
                   )}
                   <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">{r.status}</span>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button onClick={(e) => e.preventDefault()} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete report?</AlertDialogTitle>
+                        <AlertDialogDescription>This will permanently delete this report and any associated compliance plans.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={(e) => handleDelete(e, r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </div>
               </Link>
