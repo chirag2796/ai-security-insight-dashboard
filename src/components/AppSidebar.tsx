@@ -16,12 +16,12 @@ const userItems = [
 
 const adminItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Tool Inventory", url: "/tools", icon: Wrench },
   { title: "Requests", url: "/requests", icon: GitPullRequest },
-  { title: "Vendors", url: "/vendors", icon: Building2 },
+  { title: "Tool Inventory", url: "/tools", icon: Wrench },
   { title: "Compliance", url: "/compliance", icon: ShieldCheck },
   { title: "Maturity", url: "/maturity", icon: TrendingUp },
   { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Vendors", url: "/vendors", icon: Building2 },
 ];
 
 const managementItems = [

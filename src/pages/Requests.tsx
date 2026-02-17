@@ -133,7 +133,7 @@ const Requests = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold text-foreground">Requests</h1>
-            <p className="text-muted-foreground text-sm mt-1">Request and track new AI tool approvals</p>
+            <p className="text-muted-foreground text-sm mt-1">Request new AI tools — approved tools appear in <button onClick={() => navigate("/tools")} className="text-primary hover:underline">Tool Inventory</button></p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
