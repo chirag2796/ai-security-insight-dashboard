@@ -5,6 +5,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function generateTempPassword(length = 12): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  let result = "";
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  for (let i = 0; i < length; i++) {
+    result += chars[array[i] % chars.length];
+  }
+  return result;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -72,38 +83,36 @@ Deno.serve(async (req) => {
 
     const inviteeName = full_name || email.split("@")[0];
     const orgName = company?.name || "the organization";
+    const tempPassword = generateTempPassword();
 
-    // Determine the app URL (use the Lovable published URL)
-    const appUrl = supabaseUrl.replace('.supabase.co', '.lovable.app');
-    const redirectTo = `${appUrl}/set-password`;
-
-    // 1. Generate an invite link (creates user if needed + generates token)
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.generateLink({
-      type: "invite",
+    // Create user directly with a temporary password
+    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
-      options: {
-        data: {
-          full_name: inviteeName,
-          invited_to_org: profile.company_id,
-        },
-        redirectTo,
+      password: tempPassword,
+      email_confirm: true, // auto-confirm so they can log in immediately
+      user_metadata: {
+        full_name: inviteeName,
+        invited_to_org: profile.company_id,
       },
     });
 
-    if (inviteError) {
-      console.error("Generate link error:", inviteError);
-      return new Response(JSON.stringify({ error: inviteError.message }), {
+    if (createError) {
+      // If user already exists, just send a new invite email
+      if (createError.message?.includes("already been registered")) {
+        return new Response(JSON.stringify({ error: "This email is already registered" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("Create user error:", createError);
+      return new Response(JSON.stringify({ error: createError.message }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Use the action_link returned by generateLink — it already contains the correct token
-    const confirmUrl = inviteData.properties.action_link;
-
-    // 2. Create pending member record (upsert to avoid duplicates)
+    // Create pending member record
     const { error: memberError } = await adminClient.from("members").upsert({
       org_id: profile.company_id,
-      user_id: inviteData.user.id,
+      user_id: newUser.user.id,
       role: "member",
       invite_email: email,
       invite_status: "pending_signup",
@@ -113,17 +122,20 @@ Deno.serve(async (req) => {
       console.error("Member upsert error:", memberError);
     }
 
-    // 3. Log admin activity
+    // Log admin activity
     await adminClient.from("activity_log").insert({
       org_id: profile.company_id,
       actor_id: caller.id,
       action: `Invited ${inviteeName} (${email}) to join the organization`,
       entity_type: "member",
-      entity_id: inviteData.user.id,
+      entity_id: newUser.user.id,
       metadata: { invited_email: email, invited_name: inviteeName },
     });
 
-    // 4. Send invitation email via Resend
+    // Determine the app login URL
+    const appUrl = "https://deep-ai-audit.lovable.app";
+
+    // Send invitation email with credentials via Resend
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -139,13 +151,19 @@ Deno.serve(async (req) => {
             <h2 style="color: #1a1a2e;">You've been invited!</h2>
             <p>Hi ${inviteeName},</p>
             <p><strong>${profile.full_name}</strong> has invited you to join <strong>${orgName}</strong> on the GRC Platform.</p>
-            <p>Click the button below to accept your invitation and set your password:</p>
+            <p>Here are your login credentials:</p>
+            <div style="background: #f4f4f8; border-radius: 8px; padding: 16px; margin: 20px 0;">
+              <p style="margin: 4px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 4px 0;"><strong>Temporary Password:</strong> ${tempPassword}</p>
+            </div>
+            <p>Click the button below to log in:</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${confirmUrl}" 
+              <a href="${appUrl}/auth" 
                  style="background-color: #3b82f6; color: white; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                Accept Invitation & Set Password
+                Log In Now
               </a>
             </div>
+            <p style="color: #666; font-size: 14px;">Please change your password after logging in for the first time.</p>
             <p style="color: #666; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
           </div>
         `,
