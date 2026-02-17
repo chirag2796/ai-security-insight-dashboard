@@ -17,6 +17,7 @@ import Admin from "./pages/Admin";
 import Report from "./pages/Report";
 import ReportsHistory from "./pages/ReportsHistory";
 import CompliancePlan from "./pages/CompliancePlan";
+import SetPassword from "./pages/SetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/set-password" element={<SetPassword />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
             <Route path="/tools" element={<ProtectedRoute adminOnly><AppLayout><Tools /></AppLayout></ProtectedRoute>} />

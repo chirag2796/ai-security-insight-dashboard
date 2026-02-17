@@ -73,15 +73,20 @@ Deno.serve(async (req) => {
     const inviteeName = full_name || email.split("@")[0];
     const orgName = company?.name || "the organization";
 
-    // 1. Generate magic link via Supabase Auth (creates user + generates link)
+    // Determine the app URL (use the Lovable published URL)
+    const appUrl = supabaseUrl.replace('.supabase.co', '.lovable.app');
+    const redirectTo = `${appUrl}/set-password`;
+
+    // 1. Generate an invite link (creates user if needed + generates token)
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.generateLink({
-      type: "magiclink",
+      type: "invite",
       email,
       options: {
         data: {
           full_name: inviteeName,
           invited_to_org: profile.company_id,
         },
+        redirectTo,
       },
     });
 
@@ -93,19 +98,20 @@ Deno.serve(async (req) => {
     }
 
     // Build the confirmation URL from the returned properties
-    const confirmUrl = `${supabaseUrl}/auth/v1/verify?token=${inviteData.properties.hashed_token}&type=magiclink&redirect_to=${encodeURIComponent(supabaseUrl.replace('.supabase.co', '.lovable.app'))}`;
+    const tokenHash = inviteData.properties.hashed_token;
+    const confirmUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=invite&redirect_to=${encodeURIComponent(redirectTo)}`;
 
-    // 2. Create pending member record
-    const { error: memberError } = await adminClient.from("members").insert({
+    // 2. Create pending member record (upsert to avoid duplicates)
+    const { error: memberError } = await adminClient.from("members").upsert({
       org_id: profile.company_id,
       user_id: inviteData.user.id,
       role: "member",
       invite_email: email,
       invite_status: "pending_signup",
-    });
+    }, { onConflict: "org_id,user_id" });
 
     if (memberError) {
-      console.error("Member insert error:", memberError);
+      console.error("Member upsert error:", memberError);
     }
 
     // 3. Log admin activity
@@ -128,17 +134,17 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "GRC Platform <noreply@deep-ai-audit.cgupta.tech>",
         to: [email],
-        subject: `You're invited to join ${orgName}`,
+        subject: `${profile.full_name} has invited you to join ${orgName}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #1a1a2e;">You've been invited!</h2>
             <p>Hi ${inviteeName},</p>
             <p><strong>${profile.full_name}</strong> has invited you to join <strong>${orgName}</strong> on the GRC Platform.</p>
-            <p>Click the button below to accept your invitation and set up your account:</p>
+            <p>Click the button below to accept your invitation and set your password:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${confirmUrl}" 
                  style="background-color: #3b82f6; color: white; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                Accept Invitation
+                Accept Invitation & Set Password
               </a>
             </div>
             <p style="color: #666; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
