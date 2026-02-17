@@ -39,7 +39,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" />
-              <span className="font-display font-bold text-sm">GRC Platform</span>
+              <span className="font-display font-bold text-sm">Tools Platform</span>
             </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
