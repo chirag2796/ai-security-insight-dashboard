@@ -241,32 +241,34 @@ const Dashboard = () => {
           </Card>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <Card className="glass-card border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="h-5 w-5 text-primary" /> Recent Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activity.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No activity yet. Start by requesting a new tool.</p>
-              ) : (
-                <div className="space-y-3">
-                  {activity.map((a) => (
-                    <div key={a.id} className="flex items-start gap-3 text-sm">
-                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                      <div>
-                        <p className="text-foreground">{a.action}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</p>
+        {isAdmin && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <Card className="glass-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Activity className="h-5 w-5 text-primary" /> Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activity.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No activity yet. Start by requesting a new tool.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {activity.map((a) => (
+                      <div key={a.id} className="flex items-start gap-3 text-sm">
+                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                        <div>
+                          <p className="text-foreground">{a.action}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </div>
   );
