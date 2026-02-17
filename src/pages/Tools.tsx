@@ -174,7 +174,7 @@ const Tools = () => {
                             className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <ExternalLink className="h-3 w-3" /> {new URL(tool.url).hostname}
+                            <ExternalLink className="h-3 w-3" /> {(() => { try { return new URL(tool.url).hostname; } catch { return tool.url; } })()}
                           </a>
                         )}
                       </div>
