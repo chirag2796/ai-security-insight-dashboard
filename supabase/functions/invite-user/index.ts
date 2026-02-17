@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
     // Build the confirmation URL from the returned properties
     const tokenHash = inviteData.properties.hashed_token;
-    const confirmUrl = `${supabaseUrl}/auth/v1/verify?token=${tokenHash}&type=invite&redirect_to=${encodeURIComponent(redirectTo)}`;
+    const confirmUrl = `${supabaseUrl}/auth/v1/verify?token_hash=${tokenHash}&type=invite&redirect_to=${encodeURIComponent(redirectTo)}`;
 
     // 2. Create pending member record (upsert to avoid duplicates)
     const { error: memberError } = await adminClient.from("members").upsert({
