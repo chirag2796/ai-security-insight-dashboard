@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, GitPullRequest, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +21,8 @@ const stageColors: Record<string, string> = {
 };
 
 const Requests = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ const Requests = () => {
     if (!profile?.company_id) return;
     const { data } = await supabase
       .from("requests")
-      .select("*, tools(name, url, status, risk_level)")
+      .select("*, tools(name, url, status, risk_level, report_id)")
       .eq("org_id", profile.company_id)
       .order("created_at", { ascending: false });
     setRequests(data || []);
@@ -161,7 +163,14 @@ const Requests = () => {
             </Card>
           ) : (
             requests.map((r) => (
-              <Card key={r.id} className="glass-card border-border/50 hover:border-primary/30 transition-colors">
+              <Card
+                key={r.id}
+                className="glass-card border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
+                onClick={() => {
+                  const reportId = r.tools?.report_id;
+                  if (reportId) navigate(`/reports/${reportId}`);
+                }}
+              >
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <GitPullRequest className="h-5 w-5 text-primary shrink-0" />
@@ -174,17 +183,22 @@ const Requests = () => {
                     {r.submission_data?.trustScore != null && (
                       <span className="text-sm font-semibold text-primary">{r.submission_data.trustScore}/100</span>
                     )}
-                    <Select value={r.workflow_stage} onValueChange={(v) => handleStageChange(r.id, v)}>
-                      <SelectTrigger className="w-[120px]">
-                        <Badge variant="outline" className={stageColors[r.workflow_stage]}>{r.workflow_stage}</Badge>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="review">Review</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {isAdmin ? (
+                      <Select value={r.workflow_stage} onValueChange={(v) => handleStageChange(r.id, v)}>
+                        <SelectTrigger className="w-[120px]" onClick={(e) => e.stopPropagation()}>
+                          <Badge variant="outline" className={stageColors[r.workflow_stage]}>{r.workflow_stage}</Badge>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="review">Review</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className={stageColors[r.workflow_stage]}>{r.workflow_stage}</Badge>
+                    )}
+                    {r.tools?.report_id && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 </CardContent>
               </Card>
